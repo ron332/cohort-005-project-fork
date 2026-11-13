@@ -31,10 +31,18 @@ export enum QuestionType {
   TrueFalse = "true_false",
 }
 
-export enum RefundStatus {
-  Requested = "requested",
+// Terms follow GLOSSARY.md: a refund request is the learner's ask; a refund
+// is the money. Request states and refund states are never mixed.
+export enum RefundRequestStatus {
+  Open = "open",
   Approved = "approved",
   Declined = "declined",
+}
+
+export enum RefundStatus {
+  Pending = "pending",
+  Issued = "issued",
+  Failed = "failed",
 }
 
 export enum TeamMemberRole {
@@ -229,8 +237,8 @@ export const purchases = sqliteTable(
   (table) => [index("purchases_course_idx").on(table.courseId)]
 );
 
-export const refunds = sqliteTable(
-  "refunds",
+export const refundRequests = sqliteTable(
+  "refund_requests",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     purchaseId: integer("purchase_id")
@@ -238,19 +246,43 @@ export const refunds = sqliteTable(
       .references(() => purchases.id),
     status: text("status")
       .notNull()
-      .$type<RefundStatus>()
-      .default(RefundStatus.Requested),
+      .$type<RefundRequestStatus>()
+      .default(RefundRequestStatus.Open),
     // The learner's own words, in the box on the course page.
     reason: text("reason").notNull(),
-    // Null until someone approves — a declined request refunds nothing.
-    amountRefunded: integer("amount_refunded"),
-    requestedAt: text("requested_at")
+    // Fixed when the refund request is raised; always the amount paid.
+    refundableAmount: integer("refundable_amount").notNull(),
+    raisedAt: text("raised_at")
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
-    resolvedAt: text("resolved_at"),
-    resolvedByUserId: integer("resolved_by_user_id").references(() => users.id),
+    // Set when staff approve or decline.
+    decidedAt: text("decided_at"),
+    decidedByUserId: integer("decided_by_user_id").references(() => users.id),
   },
-  (table) => [index("refunds_purchase_idx").on(table.purchaseId)]
+  (table) => [index("refund_requests_purchase_idx").on(table.purchaseId)]
+);
+
+// Created only when a refund request is approved — exactly one per approved
+// refund request. A failed refund is retried in place (Failed → Pending).
+export const refunds = sqliteTable(
+  "refunds",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    refundRequestId: integer("refund_request_id")
+      .notNull()
+      .references(() => refundRequests.id),
+    status: text("status")
+      .notNull()
+      .$type<RefundStatus>()
+      .default(RefundStatus.Pending),
+    // Null until the refund is issued.
+    amountRefunded: integer("amount_refunded"),
+    createdAt: text("created_at")
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    issuedAt: text("issued_at"),
+  },
+  (table) => [uniqueIndex("refunds_refund_request_idx").on(table.refundRequestId)]
 );
 
 export const teams = sqliteTable("teams", {

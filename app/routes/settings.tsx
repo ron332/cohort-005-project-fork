@@ -12,11 +12,11 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import {
   UserRole,
-  RefundStatus,
+  RefundRequestStatus,
   users,
   courses,
   purchases,
-  refunds,
+  refundRequests,
 } from "~/db/schema";
 import { AlertTriangle } from "lucide-react";
 import { data, isRouteErrorResponse, Link } from "react-router";
@@ -57,20 +57,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const openRefundRequests = db
     .select({
-      id: refunds.id,
+      id: refundRequests.id,
       courseTitle: courses.title,
       courseSlug: courses.slug,
-      amountPaid: purchases.amountPaid,
-      reason: refunds.reason,
-      requestedAt: refunds.requestedAt,
+      refundableAmount: refundRequests.refundableAmount,
+      reason: refundRequests.reason,
+      raisedAt: refundRequests.raisedAt,
     })
-    .from(refunds)
-    .innerJoin(purchases, eq(refunds.purchaseId, purchases.id))
+    .from(refundRequests)
+    .innerJoin(purchases, eq(refundRequests.purchaseId, purchases.id))
     .innerJoin(courses, eq(purchases.courseId, courses.id))
     .where(
       and(
         eq(purchases.userId, currentUserId),
-        eq(refunds.status, RefundStatus.Requested)
+        eq(refundRequests.status, RefundRequestStatus.Open)
       )
     )
     .all();
@@ -234,8 +234,8 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {formatPrice(refundRequest.amountPaid)} · raised{" "}
-                  {new Date(refundRequest.requestedAt).toLocaleDateString()}
+                  {formatPrice(refundRequest.refundableAmount)} · raised{" "}
+                  {new Date(refundRequest.raisedAt).toLocaleDateString()}
                 </p>
                 <p className="mt-2 text-sm">{refundRequest.reason}</p>
               </div>

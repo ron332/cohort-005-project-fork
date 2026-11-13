@@ -1,7 +1,7 @@
-import { RefundStatus } from "~/db/schema";
+import { RefundRequestStatus } from "~/db/schema";
 
 // Terms follow GLOSSARY.md: a refund request is the learner's ask; a refund is
-// the money. The `refunds` table holds refund requests.
+// the money.
 
 /** The 14 calendar days after purchase in which a refund request may be raised. */
 export const REFUND_WINDOW_DAYS = 14;
@@ -18,9 +18,9 @@ export function getRefundableAmount(purchase: { amountPaid: number }) {
  * A declined refund request does not block a new one.
  */
 export function getRefundRequestBlocker(
-  statuses: RefundStatus[]
+  statuses: RefundRequestStatus[]
 ): "open" | "refunded" | null {
-  if (statuses.includes(RefundStatus.Approved)) return "refunded";
-  if (statuses.includes(RefundStatus.Requested)) return "open";
+  if (statuses.includes(RefundRequestStatus.Approved)) return "refunded";
+  if (statuses.includes(RefundRequestStatus.Open)) return "open";
   return null;
 }
