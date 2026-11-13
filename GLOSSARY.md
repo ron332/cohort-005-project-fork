@@ -35,10 +35,10 @@ _Avoid_: Cancelled purchase, reversed purchase
 **Refund request**:
 A learner's ask to get the Refundable amount back for one Purchase. A Purchase may have several Refund requests, but at most one Open and at most one Approved.
 _Avoid_: Refund (for the ask), reversal, chargeback, cancellation
-In code, the `refunds` table holds refund requests. This is a known naming exception.
+Stored in the `refund_requests` table.
 
 **Open**:
-The state of a Refund request no one has decided yet. Code value: `requested`.
+The state of a Refund request no one has decided yet.
 _Avoid_: Pending, awaiting review, requested (in copy)
 Approved and Declined Refund requests may be called "closed" informally. "Closed" is not a state.
 
@@ -65,6 +65,7 @@ _Avoid_: Refund amount, reversal amount
 **Refund**:
 Money given back to a learner for the full Refundable amount. A Refund is created only when a Refund request is Approved. There are no partial Refunds and no Refunds without a Refund request.
 _Avoid_: Reversal, chargeback, payback
+Stored in the `refunds` table.
 
 **Pending**:
 The state of a Refund that the payment provider has not yet confirmed.
@@ -85,4 +86,4 @@ The money actually given back, recorded when a Refund is Issued.
 
 - **Chargeback** (a dispute the learner raises with their bank or card issuer): not modelled.
 - Partial Refunds, goodwill Refunds without a Refund request, and withdrawing a Refund request: not supported.
-- Pending and Failed are defined but not built until a payment provider is integrated. Until then, an Approved Refund request creates its Refund already Issued.
+- Nothing creates Refunds yet: there is no staff approval flow, and no payment provider to move a Refund through Pending to Issued or Failed. Until a provider exists, approving a Refund request should create its Refund already Issued.
